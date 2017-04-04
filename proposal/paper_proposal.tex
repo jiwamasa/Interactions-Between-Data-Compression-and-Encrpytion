@@ -1,0 +1,135 @@
+% ccmin.tex
+
+\documentclass[11pt]{article}
+
+\usepackage{fullpage}
+
+% wider spacing
+\renewcommand\baselinestretch{1.5}
+
+% Use the postscript times font!
+\usepackage{times}
+\usepackage{latexsym}
+\usepackage{graphicx}
+
+\usepackage{theorem}
+
+\long\def\ignore#1\endig{}      % ignore (comment out) text thru \endig
+
+
+%%%%%%%%%%%%%%%%%%% abbreviation-type macros %%%%%%%%%%%%%%%
+
+\newcommand\genref{}
+\newcommand\sectref{}
+\newcommand\defnref{}
+\newcommand\figref{}
+\newcommand\thmref{}
+\newcommand\eqnref{}
+\newcommand\Eqnref{}
+\newcommand\tblref{}
+
+\def\genref#1#2{#1~\ref{#2}}
+\def\sectref#1{\genref{Section}{#1}}
+\def\defnref#1{\genref{Section}{#1}}
+\def\figref#1{\genref{Figure}{#1}}
+\def\thmref#1{\genref{Theorem}{#1}}
+\def\eqnref#1{(\ref{#1})}
+\def\Eqnref#1{Equation (\ref{#1})}
+\def\tblref#1{\genref{Table}{#1}}
+
+\newcommand\thin{\mskip\thinmuskip}
+
+\newcommand\clause{}
+\def\clause#1{\left[ #1 \right]}
+\newcommand\set{}
+\def\set#1{\left\{ #1 \right\}}
+
+\newcommand\square{\raisebox{3pt}{\framebox[8pt]{\rule{0pt}{2pt}}}}
+
+%%%%%%%%%%%%%%%%%%% END abbreviation-type macros %%%%%%%%%%%%%%%
+
+
+% Specify numbering schemes
+\theorembodyfont{\rmfamily}
+\newtheorem{thm}{Theorem}[section]{\bfseries}{\rmfamily}
+\newtheorem{defn}[thm]{Definition}{\bfseries}{\rmfamily}
+
+% Allow larger tables and figures on same page with text.
+\renewcommand\textfraction{0.25}
+\renewcommand\dbltopfraction{1.05}
+\renewcommand\topfraction{1.05}
+\renewcommand\bottomfraction{1.05}
+
+
+
+\begin{document}
+
+\title{Interactions Between Data Compression and Encryption}
+\author{James Iwamasa}
+%\date{}
+\maketitle
+
+%\subsection*{Abstract}
+\begin{abstract}
+Every day, insurmountable amounts of data are shuffled around over an expansive web of users. 
+While the infrastructure to facilitate such movements of information is nothing short of a world wonder, 
+this system inherently poses many problems, the two biggest being that of bandwidth and security. 
+While the fields of data compression and encryption are well developed and highly specialized in their 
+own rights, they both involve the act of altering the raw data somehow, and as a result can come into 
+conflict. This paper will explore these complex interactions between data compression and encryption.
+\end{abstract}
+
+
+\section{Introduction}\label{intro-sect}
+The direction of this paper can be characterized by a single question: Do we compress our data before we 
+encrypt or the other way around? Basic knowledge of standard encryption and compression techniques will 
+imply that, typically, compression should come first. Data compression often works by noticing patterns and 
+redundancies in our data. On the other hand, encryption attempts to make our data unrecognizable gibberish 
+to anyone who doesn't know the secret code. Thus, if we want our compression to have the most effect, 
+we should not encrypt it first.\\\\
+One may also have the intuition that compression might actually assist in encryption, 
+since we're still converting our data into something only a computer can effectively decompress. 
+But there have been studies\cite{kelsey}\cite{breach} showing that compression can actually expose security flaws. 
+By examining the changes in the length of the data from the compression, 
+hackers can actually infer the plaintext of http requests (as in expoits CRIME and BREACH).\\\\
+This conflict of interests between encryption and compression is the main crux of this paper. 
+Now we will explore how the two can interfere with each other, peacefully coexist, and perhaps 
+even help each other in protecting and packaging our data. 
+
+
+
+\section{Possible Topics to Cover}\label{topics}
+
+\begin{itemize}
+	\item[]Overview of encryption/methods.
+	\item[]Overview of data compression/methods.
+	\item[]Conflicts (CRIME, BREACH, etc)
+	\item[]How they can work well with each other
+\end{itemize}
+
+
+
+% \newpage
+\begin{thebibliography}{10}
+\bibitem{kelsey}
+J. Kelsey.
+Compression and Information Leakage of Plaintext.
+In \textit{Fast Software Encryption, 9th International Workshop, FSE 2002, Leuven, Belgium, February 4-6, 2002, Revised Papers}, 
+volume 2365 of \textit{Lecture Notes in Computer Science}, pages 263-276. Springer, February 2002.
+\bibitem{breach}
+Y. Gluck, N. Harris, and A. Prado. 
+BREACH: Reviving the CRIME Attack. 
+URL: http://breachattack.com/resources/BREACH%20-%20SSL,%20gone%20in%2030%20seconds.pdf
+. [cited February 2017].
+\bibitem{sharma}
+R. Sharma and S. Bollavarapu. 
+Data Security using Compression and Cryptography Techniques. 
+In \textit{International Journal of Computer Applications (0975-8887)}, volume 117 - No. 14, May 2015. 
+\bibitem{johnson}
+M. Johnson, P. Ishwar, V. Prabhakaran, D. Schonberg, and K. Ramchandran. 
+On Compressing Encrypted Data. 
+In \textit{IEEE Transactions on Signal Processing}, volume 53 - No. 10, October 2004. 
+\end{thebibliography}
+
+\end{document}
+

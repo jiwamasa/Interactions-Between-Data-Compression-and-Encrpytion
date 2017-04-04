@@ -1,0 +1,364 @@
+% ccmin.tex
+
+\documentclass[11pt]{article}
+
+\usepackage{fullpage}
+
+% wider spacing
+\renewcommand\baselinestretch{1.5}
+
+% Use the postscript times font!
+\usepackage{times}
+\usepackage{latexsym}
+\usepackage{graphicx}
+\usepackage{float}
+
+\usepackage{theorem}
+
+%For graphs and trees
+\usepackage{tikz}
+\usetikzlibrary{automata, arrows, positioning}
+
+\long\def\ignore#1\endig{}      % ignore (comment out) text thru \endig
+
+
+%%%%%%%%%%%%%%%%%%% abbreviation-type macros %%%%%%%%%%%%%%%
+
+\newcommand\genref{}
+\newcommand\sectref{}
+\newcommand\defnref{}
+\newcommand\figref{}
+\newcommand\thmref{}
+\newcommand\eqnref{}
+\newcommand\Eqnref{}
+\newcommand\tblref{}
+
+\def\genref#1#2{#1~\ref{#2}}
+\def\sectref#1{\genref{Section}{#1}}
+\def\defnref#1{\genref{Section}{#1}}
+\def\figref#1{\genref{Figure}{#1}}
+\def\thmref#1{\genref{Theorem}{#1}}
+\def\eqnref#1{(\ref{#1})}
+\def\Eqnref#1{Equation (\ref{#1})}
+\def\tblref#1{\genref{Table}{#1}}
+
+\newcommand\thin{\mskip\thinmuskip}
+
+\newcommand\clause{}
+\def\clause#1{\left[ #1 \right]}
+\newcommand\set{}
+\def\set#1{\left\{ #1 \right\}}
+
+\newcommand\square{\raisebox{3pt}{\framebox[8pt]{\rule{0pt}{2pt}}}}
+
+%%%%%%%%%%%%%%%%%%% END abbreviation-type macros %%%%%%%%%%%%%%%
+
+
+% Specify numbering schemes
+\theorembodyfont{\rmfamily}
+\newtheorem{thm}{Theorem}[section]{\bfseries}{\rmfamily}
+\newtheorem{defn}[thm]{Definition}{\bfseries}{\rmfamily}
+
+% Allow larger tables and figures on same page with text.
+\renewcommand\textfraction{0.25}
+\renewcommand\dbltopfraction{1.05}
+\renewcommand\topfraction{1.05}
+\renewcommand\bottomfraction{1.05}
+
+
+
+\begin{document}
+
+\title{Interactions Between Data Compression and Encryption}
+\author{James Iwamasa}
+%\date{}
+\maketitle
+
+%\subsection*{Abstract}
+\begin{abstract}
+Every day, insurmountable amounts of data are shuffled around over an expansive web of users. 
+While the infrastructure to facilitate such movements of information is nothing short of a world wonder, 
+this system inherently poses many problems, the two biggest being that of bandwidth and security. 
+While the fields of data compression and encryption are well developed and highly specialized in their 
+own rights, they both involve the act of altering the raw data somehow, and as a result can come into 
+conflict. This paper will explore these complex interactions between data compression and encryption.
+\end{abstract}
+
+
+\section{Introduction}\label{intro-sect}
+The direction of this paper can be characterized by a single question: Do we compress our data before we 
+encrypt or the other way around? Basic knowledge of standard encryption and compression techniques will 
+imply that, typically, compression should come first. Data compression often works by noticing patterns and 
+redundancies in our data. On the other hand, encryption attempts to make our data unrecognizable gibberish 
+to anyone who doesn't know the secret code. Thus, if we want our compression to have the most effect, 
+we should not encrypt it first.\\\\
+One may also have the intuition that compression might actually assist in encryption, 
+since we're still converting our data into something only a computer can effectively decompress. 
+But there have been studies\cite{kelsey, gluck} showing that compression can actually expose security flaws. 
+In one method, hackers could use the difference in data length after compression to infer 
+the plaintext of http requests (as in expoits CRIME and BREACH).\\\\
+This conflict of interests between encryption and compression is the main crux of this paper. 
+Now we will explore how the two can interfere with each other, peacefully coexist, and perhaps 
+even help each other in protecting and packaging our data. 
+
+
+\section{Definitions}\label{def-sect}
+First, we lay out some basic definitions:
+\begin{defn}
+\emph{Data compression} is the act of taking raw data and shrinking it to facilitate easier transport and storage. 
+\end{defn}
+\begin{defn}
+A \emph{compression algorithm} performs the compression, while a \emph{decompression algorithm} returns 
+compressed data to its original, uncompressed form.
+\end{defn}
+\begin{defn}
+The \emph{compression rate} of some instance of compression is the amount, usually by percent, the algorithm 
+shrank the data. 
+\end{defn}
+\begin{defn}
+\emph{Data encryption} (in the field of \emph{cryptograpy}) is the act of taking raw data and transforming it 
+such that only the intended end users can use it.
+\end{defn}
+\begin{defn}
+We \emph{encrypt} data into its encrypted form, and the recipient \emph{decrypts} it to get the original data. 
+\end{defn}
+\begin{defn}
+A \emph{key} is some method or string that is paired (in optimal cases, uniquely) with an encoded set of data or 
+an encoding method. The key is then used to decode the data, the assumption being that one could not decode the 
+data without knowing the key.
+\end{defn}
+
+\section{A basic example}\label{simple-example-sect}
+We start by analyzing the interactions between compression and encryption with an example:\\
+Let us say we have some data string $s$ which is a string of capital alphabetical letters A-Z. 
+We shall now apply both a compression algorithm and an encryption method onto $s$ and observe what happens.  
+We will use \emph{Huffman encoding}\cite{huffman} as our method of compression, as it embodies many of the 
+major elements of data compression, and a simple \emph{block cipher} for our encryption for the same reasons.
+
+\subsection{Huffman encoding}\label{huffman-subsect}
+Huffman encoding involves assigning symbols variable length bit representations based on their relative 
+frequency in the string. The general idea is that more common symbols get shorter representations, 
+and less frequent ones are given longer ones. In the case of our alphabet, we would need at least 5 
+bits per symbol to represent them all by normal means (A = 00001, B = 00010, etc). So Huffman encoding's 
+benefit is twofold: Both by only using the number of bit representations we need, 
+and by using the symbol frequencies to greatly reduce the space used by common symbols.\\
+Let's first consider string $s$:
+\begin{center}ABRACADABRA\end{center}
+First we find the relative frequencies of our symbols, which we put in this table:\\
+\begin{figure}[H]\begin{center}\begin{tabular}{ r | l }
+	Symbol & Frequency \\
+	\hline
+	A & 0.45 \\
+	B & 0.18 \\
+	C & 0.09 \\
+	D & 0.09 \\
+	R & 0.18 \\
+\end{tabular}\caption{Table of symbol frequencies in "ABRACADABRA"}\end{center}\end{figure}
+Next, we must construct our Huffman encoding tree, which is a binary tree that we will use to assign bit representations 
+and also to decode our Huffman encoded string. First, we convert all our symbol/frequency pairs into binary tree nodes 
+with a symbol label and a frequency value and put them in a container $C$. Then, we will go into a loop, constructing 
+our tree until there is only one element in $C$:
+\begin{itemize}
+	\item[1.] Find the two nodes $a$ and $b$ in $C$ whose frequency values are the lowest, and remove them from $C$.
+	\item[2.] Create a new node $\alpha$ whose children are $a$ and $b$ and whose value is the sum of their frequency values. 
+	\item[3.] Add $\alpha$ to $C$ and repeat. 
+\end{itemize}
+For $s$, our tree will look like this, where greek letters are used to represent constructed nodes:
+\begin{figure}[H]\begin{center}\begin{tikzpicture} 
+	\tikzset{vertex/.style = {shape=circle,draw,minimum size=1.5em}}
+	\tikzset{edge/.style = {->,> = latex'}}
+	\node[state] (a) at (0,0) {};
+	\node[state,below right = of a] (b) {$\gamma$, 0.54};
+	\node[state,below left = of a] (c) {A, 0.45};
+	\node[state,below left =10em of b] (d) {$\beta$, 0.36};
+	\node[state,below right =10em of b] (e) {$\alpha$, 0.18};
+	\node[state,below right = of d] (f) {R, 0.18};
+	\node[state,below left = of d] (g) {B, 0.18};
+	\node[state,below right = of e] (h) {D, 0.09};
+	\node[state,below left = of e] (i) {C, 0.09};
+	\path[]
+	(a) [->]edge node[above left] {0} (c)
+	(a) [->]edge node[auto] {1} (b)
+	(b) [->]edge node[above left] {0} (d)
+	(b) [->]edge node[above right] {1} (e)
+	(e) [->]edge node[auto] {0} (h)
+	(e) [->]edge node[above left] {1} (i)
+	(d) [->]edge node[auto] {0} (f)
+	(d) [->]edge node[above left] {1} (g)
+	;
+\end{tikzpicture}\caption{Huffman encoding tree for "ABRACADABRA"}\end{center}\end{figure}
+\begin{figure}[H]\label{huffman-table-fig}\begin{center}\begin{tabular}{ r | r | l }
+	Symbol & Frequency & Bit code\\
+	\hline
+	A & 0.45 & 0\\
+	B & 0.18 & 101\\
+	C & 0.09 & 111\\
+	D & 0.09 & 110\\
+	R & 0.18 & 100\\
+\end{tabular}\caption{Table with bit representations of symbols in "ABRACADABRA"}\end{center}\end{figure}
+Note that each edge in our tree is weighted with either 0 or 1.
+As shown in \figref{huffman-table-fig}, we get the bit representations of our symbols from the tree by traversing the 
+tree, keeping track of which edge we go down, until we hit a leaf node. So our encoded string $H(s)$ is:
+\begin{center}0.101.100.0.111.0.110.0.101.100.0\end{center}
+Which is 23 bits in total, compared to the 55 bits it would have taken if each symbol took a 5 bit int representation 
+per symbol. To decode this, we start at the beginning of $H(s)$ and the root of the tree, reading in symbols 
+and traversing the tree accordingly. When we hit a leaf node, we write the symbol on that node to output, 
+go back to the root of the tree, and resume reading $H(s)$.\\\\
+Huffman encoding, while not usually used by itself in practice, is a very fundamental and representative compression 
+algorithm for two main reasons: It avoids the problem of unused space, using only the bits we need, and 
+uses the patterns in the input (in this case, the symbol frequencies) to further reduce the amount of information needed.\\\\
+One may notice that Huffman encoding acts similarly to a encryption algorithm. To decode a Huffman encoded string, 
+one requires the Huffman encoding tree used to encode it, which thus acts like a key. Indeed, one paper\cite{sangwan} explored 
+a combined compression/encryption technique where the data is first compressed with Huffman encoding, and the 
+resulting tree is then encrypted with a secret key. It is then sufficient to not encrypt the compressed data, 
+as it would be difficult to decode without the tree.
+
+\subsection{Block cipher}\label{block-cipher-subsect}
+Now let us study block ciphers, and how we use them to encrypt data. A normal cipher (or "stream cipher") involves 
+reading our data string $s$ and replacing the characters one by one to encode our string. 
+ROT13, or the Caesar cipher, is a commonly taught stream cipher where each character in our string is 
+simply shifted by 13 letters. Block ciphers work in a similar manner, only instead of operating on single 
+characters, we operate on blocks of some fixed $n$ characters at once. 
+A block cipher is made of two main elements:
+\begin{itemize}
+	\item[1.] A fixed block size $n$.
+	\item[2.] A \emph{round function}.
+\end{itemize}
+To encrypt our string, we break up the string into blocks of size $n$, and then apply our round function to each block. 
+Our round function is usually a collection of simple operations, some of which include:
+\begin{itemize}
+	\item[1.] Modulus addition: Adding some key value to each block (like with the ROT13 cipher).
+	\item[2.] Rotations: Shifting elements in the string, wrapping the ends of the block back around.
+	\item[3.] XOR adjacent blocks: After applying some other operations, XOR-ing the current block with, 
+for example, the previous one. 
+\end{itemize}
+As implied by the "round" aspect, we may apply any of these multiple times to increase encryption at the cost 
+of runtime efficiency. Decryption is then just running one's particular sequence of operations in reverse on the 
+encoded string.\\\\
+For our simple cipher $C()$, we will use a modular addition method similar to ROT13, but using a key instead 
+of a flat, universal constant. We define $C(s)$ with block size $n=4$ and key $k$ where $|k|=n$ as follows: 
+\begin{itemize}
+	\item[1.] Assign numeric values 1-26 to each letter (A = 1, B = 2, etc).
+	\item[2.] Divide $s$ into blocks of size $n$.
+	\item[3.] Add $k$ to each block (that is, add the numeric value of the first character in $k$ to the 
+numeric value of the first character in the block, wrapping around the alphabet, and so on). 
+\end{itemize}
+Let us perform our cipher on "ABRACADABRA" with block-size = 4 and $k=$ "MAGE":
+\begin{center}
+	ABRA.CADA.BRA $\rightarrow$ 1 2 18 1 . 3 1 4 1 . 2 18 1\\
+	$+$ MAGE $\rightarrow$ 13 1 7 5\\
+	14 3 25 6 . 16 2 11 6 . 15 19 8 $\rightarrow$ NCYF.PBKF.OSH\\
+\end{center}
+Thus our string is encrypted. To decrypt using our simple cipher, we simply break up the encrypted string into 
+blocks again, and subtract off the key from each block.\\\\
+Note that the letters in the encrypted version of the string are much more randomly distributed than in the 
+original string. This is a good property to have for encryption, as obvious patterns may reveal too much 
+information. 
+
+\subsection{Combining encryption and compression}\label{encrypt-plus-compress-subsect}
+Now that we have seen what these methods do on their own, let's see what happens when we apply these two methods together. 
+
+\subsubsection{Compression then encryption}\label{e-then-c-subsubsect}
+Let us first try the canonical method of compression before encryption. Using the result of our Huffman encoding, we will compute 
+$C(s)$ with block size $n=5$ and $k=$ "10101". Note that our modular addition here will be just a bitwise XOR operation between 
+$k$ and the block:
+\begin{center}
+	01011.00011.10110.01011.000 $\rightarrow$ 11110.10110.00011.11110.101\\
+\end{center}
+This works just as we would expect, as our cipher is not directly affected by the content of the string. Our string is 
+safely encrypted, and still retains the same compression rate from before.
+
+\subsubsection{Encryption then compression}\label{c-then-e-subsubsect}
+We now try performing the compression after we have encrypted the data. Using the encrypted string we got earlier, we find 
+our frequencies and construct our Huffman encoding tree:
+\begin{figure}[H]\label{huffman-table2-fig}\begin{center}\begin{tabular}{ r | r | l }
+	Symbol & Frequency & Bit code\\
+	\hline
+	B & 0.09 & 111\\
+	C & 0.09 & 110\\
+	F & 0.18 & 000\\
+	H & 0.09 & 101\\
+	K & 0.09 & 100\\
+	N & 0.09 & 0111\\
+	O & 0.09 & 0110\\
+	P & 0.09 & 0101\\
+	S & 0.09 & 0100\\
+	Y & 0.09 & 001\\
+\end{tabular}\caption{Table with bit representations of symbols in "NCYFPBKFOSH"}\end{center}\end{figure}
+\begin{figure}[H]\begin{center}\begin{tikzpicture} 
+	\tikzset{vertex/.style = {shape=circle,draw,minimum size=1.5em}}
+	\tikzset{edge/.style = {->,> = latex'}}
+	\node[state] (a) at (0,0) {};
+	\node[state,below right =8em of a] (b) {$\theta$, 0.63};
+	\node[state,below left =18em and 10em of a] (c) {$\zeta$, 0.36};
+	\node[state,below right =6em of c] (d) {$\beta$, 0.18};
+	\node[state,below left =6em of c] (e) {$\alpha$, 0.18};
+	\node[state,below right =2em of e] (f) {C, 0.09};
+	\node[state,below left =2em of e] (g) {B, 0.09};
+	\node[state,below right =2em of d] (h) {K, 0.09};
+	\node[state,below left =2em of d] (i) {H, 0.09};
+	\node[state,below right =6em of b] (j) {$\epsilon$, 0.27};
+	\node[state,below left =1em and 4em of b] (k) {$\eta$, 0.36};
+	\node[state,below right =10em and 4em of k] (l) {$\delta$, 0.18};
+	\node[state,below left =2em of k] (m) {$\gamma$, 0.18};
+	\node[state,below right =2em of m] (o) {O, 0.09};
+	\node[state,below left =2em of m] (p) {N, 0.09};
+	\node[state,below right =2em of l] (q) {S, 0.09};
+	\node[state,below left =2em of l] (r) {P, 0.09};
+	\node[state,below right =2em of j] (s) {F, 0.09};
+	\node[state,below left =2em of j] (t) {Y, 0.09};
+	\path[]
+	(a) [->]edge node[auto] {0} (b)
+	(a) [->]edge node[above left] {1} (c)
+	(c) [->]edge node[auto] {0} (d)
+	(c) [->]edge node[above left] {1} (e)
+	(e) [->]edge node[auto] {0} (f)
+	(e) [->]edge node[above left] {1} (g)
+	(d) [->]edge node[auto] {0} (h)
+	(d) [->]edge node[above left] {1} (i)
+	(b) [->]edge node[auto] {0} (j)
+	(b) [->]edge node[above left] {1} (k)
+	(k) [->]edge node[auto] {0} (l)
+	(k) [->]edge node[above left] {1} (m)
+	(m) [->]edge node[auto] {0} (o)
+	(m) [->]edge node[above left] {1} (p)
+	(l) [->]edge node[auto] {0} (q)
+	(l) [->]edge node[above left] {1} (r)
+	(j) [->]edge node[auto] {0} (s)
+	(j) [->]edge node[above left] {1} (t)
+	;
+\end{tikzpicture}\caption{Huffman encoding tree for "NCYFPBKFOSH"}\end{center}\end{figure}
+Thus, we get the compressed data $H(C(s))$:
+\begin{center}0111.110.001.000.0101.111.100.000.0110.0100.101\end{center}
+Which is 37 bits long, significantly longer than the string we got as a result of compressing first (which was 23 bits, 
+compared to the normal representation of 55 bits). The reason for this 
+can be easily seen in the Huffman encoding tree we constructed. Huffman encoding assigns bit representations 
+based on relative frequency. When we encrypted with our cipher, the frequencies were scrambled in an evenly distributed way, 
+which, while good for encryption, is not good for compression. So we end up with a much larger tree which, in itself, also 
+adds some overhead, since we need to communicate the tree to the end user so that they can decompress the data.\\\\
+In our simple example, we have shown that the canonical compression before encryption approach is 
+better than the alternative for the algorithms we chose, but there are many different kinds of compression and 
+encryption algorithms. We will now explore these other interactions, and see how the canon holds. 
+
+\section{A Runtime Perspective}\label{runtime-sect}
+As mentioned in \sectref{block-cipher-subsect} encryption is done by applying a round function of several simple operations 
+on a string in multiple rounds. We can thus increase the strength of our encryption to a sufficient degree just by 
+applying more rounds, but this has a serious runtime cost. Especially if you have a large amount of sensitive data to 
+encrypt, the speed of your encryption can become just as important as its effectiveness. Likewise, the speeds of our 
+compression algorithms are just as much a consideration as the compression rate.\\
+In our example, while the speed of our simple cipher did not really depend on the data itself, the speed of our 
+compression algorithm was greatly slowed down when applied after the encryption (as can be seen in the difference in 
+sized of the Huffman encoding trees). Certainly, the compression still compressed the data to a certain degree, but 
+at a severe runtime cost.\\
+
+
+
+% \newpage
+
+\bibliography{reg-res}
+% \bibliographystyle{splncs}
+% \bibliographystyle{mod-aaai}
+\bibliographystyle{alpha}
+
+\end{document}
+
